@@ -57,6 +57,8 @@ export default function maFileField(Upload) {
                     for (var file in selectedFiles) {
                         uploadParams = angular.copy(scope.field().uploadInformation());
                         uploadParams.file = selectedFiles[file];
+                        var succ = uploadParams.success || function(){ return true; };
+                        var err = uploadParams.error || function(){ return true; };
                         Upload
                             .upload(uploadParams)
                             .progress(function(evt) {
@@ -66,23 +68,27 @@ export default function maFileField(Upload) {
                                 };
                             })
                             .success(function(data, status, headers, config) {
-                                scope.files[config.file.name] = {
-                                    "name": scope.apifilename ? data[scope.apifilename] : config.file.name,
-                                    "progress": 0
-                                };
-                                if (scope.apifilename) {
-                                    var apiNames = Object.keys(scope.files).map(function(fileindex) {
-                                        return scope.files[fileindex].name;
-                                    });
-                                    scope.value = apiNames.join(',');
-                                } else {
-                                    scope.value = Object.keys(scope.files).join(',');
+                                if(succ(data, status, headers, config, scope) !== false){
+                                    scope.files[config.file.name] = {
+                                        "name": scope.apifilename ? data[scope.apifilename] : config.file.name,
+                                        "progress": 0
+                                    };
+                                    if (scope.apifilename) {
+                                        var apiNames = Object.keys(scope.files).map(function(fileindex) {
+                                            return scope.files[fileindex].name;
+                                        });
+                                        scope.value = apiNames.join(',');
+                                    } else {
+                                        scope.value = Object.keys(scope.files).join(',');
+                                    }
                                 }
                             })
                             .error(function(data, status, headers, config) {
-                                delete scope.files[config.file.name];
+                                if(err(data, status, headers, config, scope) !== false){
+                                    delete scope.files[config.file.name];
 
-                                scope.value = Object.keys(scope.files).join(',');
+                                    scope.value = Object.keys(scope.files).join(',');
+                                }
                             });
                     }
                 };
